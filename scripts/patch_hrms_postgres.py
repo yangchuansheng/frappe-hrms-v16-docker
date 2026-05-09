@@ -27,6 +27,60 @@ PATCHES = {
 		order_by="",
 	)""",
     },
+    "apps/erpnext/erpnext/accounts/report/asset_depreciations_and_balances/asset_depreciations_and_balances.py": {
+        "IfNull(asset.disposal_date, 0) == 0": "asset.disposal_date.isnull()",
+        "IfNull(asset.disposal_date, 0) != 0": "asset.disposal_date.notnull()",
+    },
+    "apps/erpnext/erpnext/controllers/trends.py": {
+        """SUM(IF(t1.{trans_date} BETWEEN '{sd}' AND '{ed}', t2.stock_qty, NULL)),
+					SUM(IF(t1.{trans_date} BETWEEN '{sd}' AND '{ed}', t2.base_net_amount, NULL)),""": """SUM(CASE WHEN t1.{trans_date} BETWEEN '{sd}' AND '{ed}' THEN t2.stock_qty ELSE NULL END),
+					SUM(CASE WHEN t1.{trans_date} BETWEEN '{sd}' AND '{ed}' THEN t2.base_net_amount ELSE NULL END),""",
+    },
+    "apps/erpnext/erpnext/assets/doctype/location/location.py": {
+        """return frappe.db.sql(
+		f\"\"\"
+		select
+			name as value,
+			is_group as expandable
+		from
+			`tabLocation` comp
+		where
+			ifnull(parent_location, \"\")={frappe.db.escape(parent)}
+		\"\"\",
+		as_dict=1,
+	)""": """return frappe.db.sql(
+		\"\"\"
+		select
+			name as value,
+			is_group as expandable
+		from
+			`tabLocation` comp
+		where
+			coalesce(parent_location, '')=%s
+		\"\"\",
+		(parent,),
+		as_dict=1,
+	)""",
+    },
+    "apps/erpnext/erpnext/buying/report/purchase_order_analysis/purchase_order_analysis.py": {
+        """.groupby(po_item.name)""": """.groupby(
+				po.transaction_date,
+				po_item.schedule_date,
+				po_item.project,
+				po.name,
+				po.status,
+				po.supplier,
+				po_item.item_code,
+				po_item.qty,
+				po_item.received_qty,
+				po_item.base_amount,
+				po_item.billed_amt,
+				po.conversion_rate,
+				po.set_warehouse,
+				po.company,
+				po_item.name,
+			)""",
+    },
 }
 
 
