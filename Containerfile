@@ -37,6 +37,9 @@ RUN cp -r /home/frappe/frappe-bench/sites/assets /home/frappe/frappe-bench/asset
 VOLUME [ "/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/logs" ]
 
 USER root
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends nodejs \
+  && rm -rf /var/lib/apt/lists/*
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
