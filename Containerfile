@@ -9,7 +9,12 @@ ARG CACHE_BUST=""
 
 USER root
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends postgresql postgresql-client redis-server gzip \
+  && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+  && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
+  && . /etc/os-release \
+  && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends postgresql-16 postgresql-client-16 redis-server gzip \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --chown=frappe:frappe scripts /opt/frappe/scripts
@@ -37,7 +42,12 @@ FROM ${FRAPPE_IMAGE_PREFIX}/build:${FRAPPE_BRANCH} AS runtime
 
 USER root
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends nodejs postgresql-client gzip \
+  && apt-get install -y --no-install-recommends ca-certificates curl gnupg nodejs \
+  && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
+  && . /etc/os-release \
+  && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends postgresql-client-16 gzip \
   && rm -rf /var/lib/apt/lists/*
 
 USER frappe
