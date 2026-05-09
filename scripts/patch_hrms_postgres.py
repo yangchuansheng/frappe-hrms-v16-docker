@@ -16,11 +16,24 @@ PATCHES = {
         "& ((advance.return_amount) & (advance.paid_amount == advance.return_amount))": "& ((advance.return_amount > 0) & (advance.paid_amount == advance.return_amount))",
         "(advance.claimed_amount & advance.return_amount)": "((advance.claimed_amount > 0) & (advance.return_amount > 0))",
     },
+    "apps/frappe/frappe/desk/doctype/number_card/number_card.py": {
+        """res = frappe.get_list(
+		doc.document_type, fields=fields, filters=filters, parent_doctype=doc.parent_document_type
+	)""": """res = frappe.get_list(
+		doc.document_type,
+		fields=fields,
+		filters=filters,
+		parent_doctype=doc.parent_document_type,
+		order_by="",
+	)""",
+    },
 }
 
 
 def main() -> None:
     changed_files = []
+    missing_replacements = []
+
     for filename, replacements in PATCHES.items():
         path = Path(filename)
         if not path.exists():
@@ -29,16 +42,23 @@ def main() -> None:
         text = path.read_text()
         new_text = text
         for old, new in replacements.items():
-            new_text = new_text.replace(old, new)
+            if old in new_text:
+                new_text = new_text.replace(old, new)
+            elif new not in new_text:
+                missing_replacements.append(f"{filename}: {old!r}")
 
         if new_text != text:
             path.write_text(new_text)
             changed_files.append(filename)
 
+    if missing_replacements:
+        details = "\n".join(missing_replacements)
+        raise SystemExit(f"PostgreSQL compatibility patch target changed:\n{details}")
+
     if changed_files:
-        print("Patched HRMS PostgreSQL compatibility:", ", ".join(changed_files))
+        print("Patched Frappe/HRMS PostgreSQL compatibility:", ", ".join(changed_files))
     else:
-        print("HRMS PostgreSQL compatibility patches already applied")
+        print("Frappe/HRMS PostgreSQL compatibility patches already applied")
 
 
 if __name__ == "__main__":
