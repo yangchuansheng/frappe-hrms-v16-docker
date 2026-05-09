@@ -13,8 +13,8 @@ PG_BIN_DIR=$(find /usr/lib/postgresql -maxdepth 1 -mindepth 1 -type d | sort -V 
 export PATH="${PG_BIN_DIR}:${PATH}"
 
 rm -rf "${PGDATA}"
-initdb -D "${PGDATA}" -U postgres --auth=trust --no-locale
-pg_ctl -D "${PGDATA}" -o "-c listen_addresses='127.0.0.1' -p ${PGPORT}" -w start
+initdb -D "${PGDATA}" -U postgres --auth=trust --encoding=UTF8 --locale=C.UTF-8
+pg_ctl -D "${PGDATA}" -o "-c listen_addresses='127.0.0.1' -c unix_socket_directories=/tmp -p ${PGPORT}" -w start
 cleanup() {
   pg_ctl -D "${PGDATA}" -m fast -w stop >/dev/null 2>&1 || true
 }
