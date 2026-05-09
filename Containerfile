@@ -7,6 +7,14 @@ ARG FRAPPE_BRANCH=version-16
 ARG FRAPPE_PATH=https://github.com/frappe/frappe
 ARG CACHE_BUST=""
 
+USER root
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends postgresql postgresql-client gzip \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --chown=frappe:frappe scripts /opt/frappe/scripts
+RUN chmod +x /opt/frappe/scripts/*.sh
+
 USER frappe
 
 RUN --mount=type=secret,id=apps_json,target=/opt/frappe/apps.json,uid=1000,gid=1000 \
@@ -20,30 +28,32 @@ RUN --mount=type=secret,id=apps_json,target=/opt/frappe/apps.json,uid=1000,gid=1
     --verbose \
     /home/frappe/frappe-bench && \
   cd /home/frappe/frappe-bench && \
-  echo '{"socketio_port": 9000}' > sites/common_site_config.json && \
+  python /opt/frappe/scripts/patch_hrms_postgres.py && \
+  /opt/frappe/scripts/write_runtime_files.sh && \
+  /opt/frappe/scripts/build_seed.sh && \
   find apps -mindepth 1 -path "*/.git" | xargs rm -fr
 
 FROM ${FRAPPE_IMAGE_PREFIX}/build:${FRAPPE_BRANCH} AS runtime
 
+USER root
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends nodejs postgresql-client gzip \
+  && rm -rf /var/lib/apt/lists/*
+
 USER frappe
 
 COPY --from=builder --chown=frappe:frappe /home/frappe/frappe-bench /home/frappe/frappe-bench
-
-WORKDIR /home/frappe/frappe-bench
-
-RUN cp -r /home/frappe/frappe-bench/sites/assets /home/frappe/frappe-bench/assets && \
-  rm -rf /home/frappe/frappe-bench/sites/assets
-
-VOLUME [ "/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/logs" ]
+COPY --from=builder --chown=frappe:frappe /opt/frappe/seed /opt/frappe/seed
+COPY --from=builder --chown=frappe:frappe /opt/frappe/scripts/restore_seed_site.sh /usr/local/bin/restore-seed-site
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
 USER root
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends nodejs \
-  && rm -rf /var/lib/apt/lists/*
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/restore-seed-site
 
 USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+VOLUME [ "/home/frappe/frappe-bench/sites", "/home/frappe/frappe-bench/logs" ]
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD [ "/home/frappe/frappe-bench/env/bin/gunicorn", \
