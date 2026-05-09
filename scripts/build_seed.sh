@@ -11,7 +11,11 @@ export PGUSER="postgres"
 export REDIS_PORT="${REDIS_PORT:-11311}"
 export REDIS_DIR="/tmp/hrms-seed-redis"
 
-PG_BIN_DIR=$(find /usr/lib/postgresql -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)/bin
+PG_BIN_DIR=$(find /usr/lib/postgresql -path '*/bin/initdb' -type f | sed 's#/initdb$##' | sort -V | tail -1)
+if [ -z "${PG_BIN_DIR}" ]; then
+  echo "PostgreSQL server binaries were not found" >&2
+  exit 1
+fi
 export PATH="${PG_BIN_DIR}:${PATH}"
 
 rm -rf "${PGDATA}"
