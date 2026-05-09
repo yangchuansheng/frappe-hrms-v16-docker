@@ -35,6 +35,29 @@ PATCHES = {
         """SUM(IF(t1.{trans_date} BETWEEN '{sd}' AND '{ed}', t2.stock_qty, NULL)),
 					SUM(IF(t1.{trans_date} BETWEEN '{sd}' AND '{ed}', t2.base_net_amount, NULL)),""": """SUM(CASE WHEN t1.{trans_date} BETWEEN '{sd}' AND '{ed}' THEN t2.stock_qty ELSE NULL END),
 					SUM(CASE WHEN t1.{trans_date} BETWEEN '{sd}' AND '{ed}' THEN t2.base_net_amount ELSE NULL END),""",
+        'based_on_details["based_on_group_by"] = "t2.item_code"': 'based_on_details["based_on_group_by"] = "t2.item_code, t2.item_name"',
+        'based_on_details["based_on_group_by"] = "t1.party_name" if trans == "Quotation" else "t1.customer"': """based_on_details["based_on_group_by"] = (
+				"t1.party_name, t1.customer_name, t1.territory"
+				if trans == "Quotation"
+				else "t1.customer, t1.customer_name, t1.territory"
+			)""",
+        'based_on_details["based_on_group_by"] = "t1.supplier"': 'based_on_details["based_on_group_by"] = "t1.supplier, t1.supplier_name, t3.supplier_group"',
+        """based_on_details["addl_tables_relational_cond"] = (
+		based_on_details.get("addl_tables_relational_cond", "") + " and t1.company = t4.name"
+	)""": """based_on_details["addl_tables_relational_cond"] = (
+		based_on_details.get("addl_tables_relational_cond", "") + " and t1.company = t4.name"
+	)
+	based_on_details["based_on_group_by"] += ", t4.default_currency\"""",
+        """and t1.docstatus = 1 and {} = {} and {} = {} {} {}
+						\"\"\".format(""": """and t1.docstatus = 1 and {} = {} and {} = {} {} {}
+								group by t4.default_currency, {}
+						\"\"\".format(""",
+        """conditions.get("addl_tables_relational_cond"),
+						cond,
+					),""": """conditions.get("addl_tables_relational_cond"),
+						cond,
+						sel_col,
+					),""",
     },
     "apps/erpnext/erpnext/assets/doctype/location/location.py": {
         """return frappe.db.sql(
