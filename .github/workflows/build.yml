@@ -34,8 +34,6 @@ concurrency:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/frappe-hrms
-  FRAPPE_DOCKER_REF: main
-
 jobs:
   build:
     name: Build and push image
@@ -57,13 +55,6 @@ jobs:
           echo "erpnext_sha=${ERPNEXT_SHA}" >> "$GITHUB_OUTPUT"
           echo "frappe_sha=${FRAPPE_SHA}" >> "$GITHUB_OUTPUT"
           echo "cache_bust=${FRAPPE_SHA}-${ERPNEXT_SHA}-${HRMS_SHA}" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout frappe_docker
-        uses: actions/checkout@v4
-        with:
-          repository: frappe/frappe_docker
-          ref: ${{ env.FRAPPE_DOCKER_REF }}
-          path: frappe_docker
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -92,8 +83,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: frappe_docker
-          file: frappe_docker/images/layered/Containerfile
+          context: .
+          file: Containerfile
           platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
           push: true
           provenance: false

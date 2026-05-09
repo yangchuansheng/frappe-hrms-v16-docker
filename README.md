@@ -2,7 +2,7 @@
 
 Builds a custom Frappe HRMS v16 image for Sealos deployments.
 
-The image is built with the official `frappe/frappe_docker` layered Containerfile and includes:
+The image follows the official `frappe/frappe_docker` layered build pattern and uses the official Frappe `build:version-16` base for runtime so Node.js is available for Socket.IO:
 
 - `frappe/frappe` branch `version-16`
 - `frappe/erpnext` branch `version-16`
@@ -21,15 +21,13 @@ The upstream `ghcr.io/frappe/hrms` workflow currently builds the HRMS image from
 ## Manual build
 
 ```bash
-git clone https://github.com/frappe/frappe_docker
-cd frappe_docker
 docker build \
   --no-cache \
   --build-arg=FRAPPE_PATH=https://github.com/frappe/frappe \
   --build-arg=FRAPPE_BRANCH=version-16 \
-  --secret=id=apps_json,src=../apps.json \
+  --secret=id=apps_json,src=apps.json \
   --tag=ghcr.io/yangchuansheng/frappe-hrms:v16 \
-  --file=images/layered/Containerfile .
+  --file=Containerfile .
 ```
 
 ## Trigger build
