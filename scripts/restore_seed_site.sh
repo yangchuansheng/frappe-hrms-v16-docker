@@ -75,6 +75,7 @@ bench set-config -g host_name "${APP_URL}"
 
 if [ -d "sites/${SITE_NAME}" ] && [ ! -f "${READY_MARKER}" ]; then
   echo "Removing incomplete Frappe HR site ${SITE_NAME}..."
+  mkdir -p "sites/${SITE_NAME}/logs"
   bench drop-site "${SITE_NAME}" --force --no-backup || true
   rm -rf "sites/${SITE_NAME}"
 fi
@@ -123,7 +124,7 @@ SQL
 
   gzip -dc "${SEED_SQL}" | PGPASSWORD="${DB_PASSWORD}" psql -v ON_ERROR_STOP=1 -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}"
 
-  mkdir -p "sites/${SITE_NAME}"
+  mkdir -p "sites/${SITE_NAME}/logs"
   cat > "sites/${SITE_NAME}/site_config.json" <<JSON
 {
  "db_type": "postgres",
