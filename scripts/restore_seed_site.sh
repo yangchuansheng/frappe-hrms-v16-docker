@@ -58,7 +58,11 @@ if [ -d /home/frappe/frappe-bench/assets ]; then
   ln -s /home/frappe/frappe-bench/assets sites/assets
 fi
 
-ls -1 apps > sites/apps.txt
+cat > sites/apps.txt <<'EOF'
+frappe
+erpnext
+hrms
+EOF
 
 bench set-config -g db_type postgres
 bench set-config -g db_host "${DB_HOST}"

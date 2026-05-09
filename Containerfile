@@ -9,7 +9,7 @@ ARG CACHE_BUST=""
 
 USER root
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends postgresql postgresql-client gzip \
+  && apt-get install -y --no-install-recommends postgresql postgresql-client redis-server gzip \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --chown=frappe:frappe scripts /opt/frappe/scripts

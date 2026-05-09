@@ -8,19 +8,28 @@ export PGDATA="/tmp/hrms-seed-pgdata"
 export PGHOST="127.0.0.1"
 export PGPORT="5432"
 export PGUSER="postgres"
+export REDIS_PORT="${REDIS_PORT:-11311}"
+export REDIS_DIR="/tmp/hrms-seed-redis"
 
 PG_BIN_DIR=$(find /usr/lib/postgresql -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)/bin
 export PATH="${PG_BIN_DIR}:${PATH}"
 
 rm -rf "${PGDATA}"
+rm -rf "${REDIS_DIR}"
 initdb -D "${PGDATA}" -U postgres --auth=trust --encoding=UTF8 --locale=C.UTF-8
 pg_ctl -D "${PGDATA}" -o "-c listen_addresses='127.0.0.1' -c unix_socket_directories=/tmp -p ${PGPORT}" -w start
+mkdir -p "${REDIS_DIR}"
+redis-server --save "" --appendonly no --port "${REDIS_PORT}" --dir "${REDIS_DIR}" --daemonize yes
 cleanup() {
+  redis-cli -p "${REDIS_PORT}" shutdown nosave >/dev/null 2>&1 || true
   pg_ctl -D "${PGDATA}" -m fast -w stop >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 python /opt/frappe/scripts/patch_hrms_postgres.py
+bench set-config -g redis_cache "redis://127.0.0.1:${REDIS_PORT}"
+bench set-config -g redis_queue "redis://127.0.0.1:${REDIS_PORT}"
+bench set-config -g redis_socketio "redis://127.0.0.1:${REDIS_PORT}"
 
 bench new-site "${SEED_SITE}" \
   --force \
@@ -38,8 +47,10 @@ bench --site "${SEED_SITE}" clear-cache
 mkdir -p /opt/frappe/seed
 DB_NAME=$(python - <<'PY'
 import json
+import os
 from pathlib import Path
-print(json.loads(Path('sites/hrms.localhost/site_config.json').read_text())['db_name'])
+seed_site = os.environ.get("SEED_SITE", "hrms.localhost")
+print(json.loads(Path("sites", seed_site, "site_config.json").read_text())["db_name"])
 PY
 )
 pg_dump -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" --format=plain --no-owner --no-privileges "${DB_NAME}" | gzip -9 > /opt/frappe/seed/hrms-site.sql.gz
