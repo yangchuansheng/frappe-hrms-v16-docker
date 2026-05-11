@@ -104,6 +104,65 @@ PATCHES = {
 				po_item.name,
 			)""",
     },
+    "apps/erpnext/erpnext/stock/reorder_item.py": {
+        """				| (item_table.end_of_life == "0000-00-00")
+""": "",
+    },
+    "apps/erpnext/erpnext/assets/doctype/asset/depreciation.py": {
+        ".groupby(ads.name)": ".groupby(ads.name, a.name, a.creation)",
+    },
+    "apps/hrms/hrms/controllers/employee_reminders.py": {
+        """"employee_name" AS 'name'""": """"employee_name" AS name""",
+        "date_part('day', %(today)s)": "date_part('day', %(today)s::date)",
+        "date_part('month', %(today)s)": "date_part('month', %(today)s::date)",
+        "date_part('year', %(today)s)": "date_part('year', %(today)s::date)",
+    },
+    "apps/frappe/frappe/utils/goal.py": {
+        "Function(aggregation, goal_field)": "Function(aggregation, Table[goal_field])",
+    },
+    "apps/erpnext/erpnext/controllers/accounts_controller.py": {
+        ".when(invoice.disable_rounded_total, invoice.grand_total)": ".when(invoice.disable_rounded_total == 1, invoice.grand_total)",
+        ".when(invoice.disable_rounded_total, invoice.base_grand_total)": ".when(invoice.disable_rounded_total == 1, invoice.base_grand_total)",
+        """((invoice.is_pos & invoice.due_date < today) | is_overdue)""": """(((invoice.is_pos == 1) & (invoice.due_date < today)) | is_overdue)""",
+    },
+    "apps/erpnext/erpnext/assets/doctype/asset/asset.py": {
+        """assets = frappe.get_all(
+		"Asset", filters={"docstatus": 1, "maintenance_required": 1, "disposal_date": ("is", "not set")}
+	)""": """asset = frappe.qb.DocType("Asset")
+	assets = (
+		frappe.qb.from_(asset)
+		.select(asset.name)
+		.where((asset.docstatus == 1) & (asset.maintenance_required == 1) & asset.disposal_date.isnull())
+		.run(as_dict=True)
+	)""",
+    },
+    "apps/erpnext/erpnext/setup/doctype/company/company.py": {
+        """return frappe.db.sql(
+		f\"\"\"
+		select
+			name as value,
+			is_group as expandable
+		from
+			`tabCompany` comp
+		where
+			ifnull(parent_company, \"\")={frappe.db.escape(parent)}
+		\"\"\",
+		as_dict=1,
+	)""": """return frappe.db.sql(
+		\"\"\"
+		select
+			name as value,
+			is_group as expandable
+		from
+			`tabCompany` comp
+		where
+			coalesce(parent_company, '')=%s
+		\"\"\",
+		(parent,),
+		as_dict=1,
+	)""",
+        "transaction_date > date_sub(curdate(), interval 1 year)": "transaction_date > CURRENT_DATE - INTERVAL '1 year'",
+    },
 }
 
 
