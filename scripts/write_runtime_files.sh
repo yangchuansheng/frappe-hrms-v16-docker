@@ -7,7 +7,7 @@ printf '%s\n' '{"socketio_port": 9000}' > sites/common_site_config.json
 ls -1 apps > sites/apps.txt
 
 cat > Procfile <<'EOF'
-web: bench serve --port 8000
+web: env/bin/gunicorn --chdir=/home/frappe/frappe-bench/sites --bind=0.0.0.0:8000 --threads=2 --workers=1 --worker-class=gthread --worker-tmp-dir=/dev/shm --timeout=120 --preload frappe.app:application
 socketio: node apps/frappe/socketio.js
 schedule: bench schedule
 worker_short: bench worker --queue short,default
